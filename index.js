@@ -24,8 +24,6 @@ app.use(express.static('dist'))
 
 // DB connection:
 const mongoose = require('mongoose')
-const password = process.argv[2]
-
 mongoose.set('strictQuery',false)
 
 app.get('/', (req, res) => {
@@ -56,31 +54,21 @@ app.delete('/api/notes/:id', (req, res) => {
     res.status(204).end()
 })
 
-const generateId = () => {
-    const maxId = notes.length > 0
-    ? Math.max(...notes.map(n => n.id))
-    : 0
-    return maxId + 1
-}
-
 app.post('/api/notes', (req, res) => {
     const body = req.body
     
     if (!body.content) {
-        return res.status(400).json({
-            error: 'content missing!'
-        })
+        return res.status(400).json({ error: 'content missing!' })
     }
 
-    const note = {
+    const note = new Note({
         content: body.content,
-        important: Boolean(body.important) || false,
-        id: generateId()
-    }
+        important: body.important || false,
+    })
 
-    notes = notes.concat(note)
-    
-    res.json(note)
+    note.save().then(saved => {
+        res.json(saved)
+    })
 })
 
 app.use(unknownEndpoint)
