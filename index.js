@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const Note = require('./models/note')
 
 const requestLogger = (request, response, next) => {
     console.log('Method: ', request.method)
@@ -20,36 +22,24 @@ app.use(requestLogger)
 app.use(cors())
 app.use(express.static('dist'))
 
-let notes = [
-    {
-        id: 1,
-        content: 'HTML is easy',
-        important: true
-    },
-    {
-        id: 2,
-        content: 'Browser can execute only JavaScript',
-        important: false
-    },
-    {
-        id: 3,
-        content: 'GET and POST are the most important methods of HTTP Protocol',
-        important: true
-    }
-]
+// DB connection:
+const mongoose = require('mongoose')
+const password = process.argv[2]
+
+mongoose.set('strictQuery',false)
 
 app.get('/', (req, res) => {
     res.send('<h1>Hello world!</h1>')
 })
 
 app.get('/api/notes', (req, res) => {
-    res.json(notes)
+    Note.find({}).then(note => {
+        res.json(note)
+    })
 })
 
 app.get('/api/notes/:id', (req, res) => {
     const id = Number(req.params.id)
-    // const header = req.headers
-    // console.log(header)
     const note = notes.find(note => note.id === id)
     
     if (note) {
@@ -95,7 +85,7 @@ app.post('/api/notes', (req, res) => {
 
 app.use(unknownEndpoint)
 
-const port = process.env.PORT || 3001
+const port = process.env.PORT
 app.listen(port, () => {
     console.log(`Server running in ${port}`)
 })
