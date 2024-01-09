@@ -4,6 +4,10 @@ const app = express()
 const cors = require('cors')
 const Note = require('./models/note')
 
+// DB connection:
+const mongoose = require('mongoose')
+mongoose.set('strictQuery',false)
+
 const requestLogger = (request, response, next) => {
     console.log('Method: ', request.method)
     console.log('Path: ', request.path)
@@ -11,24 +15,10 @@ const requestLogger = (request, response, next) => {
     next()
 }
 
-const unknownEndpoint = (req, res) => {
-    res.status(404).send({
-        error: 'unknown endpoint :('
-    })
-}
-
-app.use(express.json())
-app.use(requestLogger)
 app.use(cors())
 app.use(express.static('dist'))
-
-// DB connection:
-const mongoose = require('mongoose')
-mongoose.set('strictQuery',false)
-
-app.get('/', (req, res) => {
-    res.send('<h1>Hello world!</h1>')
-})
+app.use(express.json())
+app.use(requestLogger)
 
 app.get('/api/notes', (req, res) => {
     Note.find({}).then(note => {
@@ -36,25 +26,27 @@ app.get('/api/notes', (req, res) => {
     })
 })
 
-app.get('/api/notes/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const note = notes.find(note => note.id === id)
-    
-    if (note) {
-        res.json(note)
-    } else {
-        res.status(404).end()
-    }
+app.get('/api/notes/:id', (req, res, next) => {
+    Note.findById(req.params.id).then(note => {
+        if (note) {
+            res.json(note)
+        } else {
+            console.log('no note found')
+            res.status(404).end()
+        }
+    })
+    .catch(error => { next(error) })
   })
 
-app.delete('/api/notes/:id', (req, res) => {
-    const id = Number(req.params.id)
-    notes = notes.filter(note => note.id !== id)
-
-    res.status(204).end()
+app.delete('/api/notes/:id', (req, res, next) => {
+    Note.findByIdAndDelete(request.params.id)
+        .then(result => {
+            res.status(204).end()
+        })
+        .catch(error => next(error))
 })
 
-app.post('/api/notes', (req, res) => {
+app.post('/api/notes', (req, res, next) => {
     const body = req.body
     
     if (!body.content) {
@@ -63,15 +55,33 @@ app.post('/api/notes', (req, res) => {
 
     const note = new Note({
         content: body.content,
-        important: body.important || false,
+        important: body.important || false
     })
-
-    note.save().then(saved => {
-        res.json(saved)
-    })
+    
+    Note.findByIdAndUpdate(req.params.id, note, { new: true })
+        .then(updatedNote => {
+            res.json(updatedNote)
+        })
+        .catch(error => { next(error) })
 })
 
+const unknownEndpoint = (req, res) => {
+    res.status(404).send({
+        error: 'unknown endpoint :('
+    })
+}
+
 app.use(unknownEndpoint)
+
+const errorHandler = (error, req, res, next) => {
+    console.error(error)
+    if (error.name === 'CastError') {
+        return res.status(400).send({ error: 'Malformatted id!' })
+    }
+    next(error)
+}
+
+app.use(errorHandler)
 
 const port = process.env.PORT
 app.listen(port, () => {
