@@ -15,9 +15,13 @@ mongoose.connect(url)
     })
     
 const schema = new mongoose.Schema({
-    content: String,
+    content: {
+        type: String,
+        minlength: 5,
+        required: true
+    },
     important: Boolean
-})
+});
 
 schema.set('toJSON', {
     transform: (document, returnedObj) => {

@@ -5,3 +5,12 @@ Content-Type: application/json
     "content": "Checking if everything still works",
     "important": "true"
 }
+
+### Testing validation:
+POST http://localhost:3001/api/notes
+Content-Type: application/json
+
+{
+    "content": "lol",
+    "important": true
+}
