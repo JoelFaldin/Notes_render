@@ -49,13 +49,12 @@ app.get('/api/notes/:id', (req, res, next) => {
             console.log('no note found')
             res.status(404).end()
         }
-    })
-    .catch(error => { next(error) })
-  })
+    }).catch(error => { next(error) })
+})
 
 app.delete('/api/notes/:id', (req, res, next) => {
-    Note.findByIdAndDelete(request.params.id)
-        .then(result => {
+    Note.findByIdAndDelete(req.params.id)
+        .then(() => {
             res.status(204).end()
         })
         .catch(error => next(error))
@@ -64,7 +63,7 @@ app.delete('/api/notes/:id', (req, res, next) => {
 app.put('/api/notes', (req, res, next) => {
     const { content, important } = req.body
     
-    Note.findByIdAndUpdate(req.params.id, {content, important}, { new: true, runValidators: true, context: 'query' })
+    Note.findByIdAndUpdate(req.params.id, { content, important }, { new: true, runValidators: true, context: 'query' })
         .then(updatedNote => {
             res.json(updatedNote)
         })
@@ -83,9 +82,8 @@ const errorHandler = (error, req, res, next) => {
     console.error(error)
     if (error.name === 'CastError') {
         return res.status(400).send({ error: 'Malformatted id!' })
-    }
-     else if (error.name === 'ValidationError') {
-        return res.status(400).json({error: error.message})
+    } else if (error.name === 'ValidationError') {
+        return res.status(400).json({ error: error.message })
     }
     next(error)
 }
@@ -95,4 +93,5 @@ app.use(errorHandler)
 const port = process.env.PORT
 app.listen(port, () => {
     console.log(`Server running in ${port}`)
+    console.log(`http://localhost:${3001}`)
 })
